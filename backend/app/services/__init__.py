@@ -44,6 +44,22 @@ SERVICES: dict[str, BaseModuleService] = {
     "stream_checkpoint": StreamCheckpointService(),
 }
 
+# 检查点工作台/恢复链路的常见模块键别名
+_checkpoint_svc = SERVICES["stream_checkpoint"]
+SERVICES.update({
+    "checkpoint": _checkpoint_svc,
+    "checkpoint_workbench": _checkpoint_svc,
+    "stream_checkpoint_workbench": _checkpoint_svc,
+    "recovery": _checkpoint_svc,
+})
+
+# 批流合并入口的短键别名
+_merge_svc = SERVICES["batch_merge"]
+SERVICES.update({
+    "batch-merge": _merge_svc,
+    "merge": _merge_svc,
+})
+
 
 def service_for(module: str) -> BaseModuleService | None:
     return SERVICES.get(module)

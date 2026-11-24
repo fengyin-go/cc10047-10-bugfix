@@ -11,9 +11,15 @@ from app.seed import SEED_ROWS
 
 class Store:
     def __init__(self) -> None:
-        self._tables: dict[str, list[dict[str, Any]]] = {
+        self._tables: dict[str, list[dict[str, Any]]] = {}
+        self.reset()
+
+    def reset(self) -> None:
+        """恢复到种子数据（测试隔离用），原地清空以保持单例引用有效。"""
+        self._tables.clear()
+        self._tables.update({
             name: [dict(row) for row in rows] for name, rows in SEED_ROWS.items()
-        }
+        })
 
     def module_names(self) -> list[str]:
         return sorted(self._tables)

@@ -94,5 +94,12 @@ def create_entry(module: str, payload: EntryPayload) -> ActionResult:
 @router.post("/{module}/{entry_id}/actions", response_model=ActionResult)
 def run_action(module: str, entry_id: int, payload: ActionPayload) -> ActionResult:
     service = require_service(module)
-    entry, message = service.run_action(entry_id, payload.action.strip())
-    return ActionResult(ok=entry is not None, message=message, entry=entry)
+    action = payload.action.strip()
+    extra = payload.model_dump(exclude={"action", "remark"})
+    entry, message = service.run_action(entry_id, action, extra)
+    body: dict[str, Any] = {"ok": entry is not None, "message": message, "entry": entry}
+    # 富动作（认领/恢复/推进）的关键结果同步到响应顶层，便于统一动作入口消费
+    if entry is not None and isinstance(entry.get("last_action_result"), dict):
+        for key, value in entry["last_action_result"].items():
+            body.setdefault(key, value)
+    return ActionResult.model_validate(body)

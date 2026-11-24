@@ -141,18 +141,26 @@ def chain_schema_evolve(schema_id: int, backfill_id: int, merge_id: int, checkpo
     if not r3["ok"]:
         return {"chain": "schema-evolve", "ok": False, "steps": steps, "error": r3.get("message")}
 
-    # Step 4: 保存检查点
+    # Step 4: 保存检查点（消费批流合并写入集，回写恢复待办与交付区间/版本）
     svc_ckpt = service_for("stream_checkpoint")
     if not svc_ckpt:
         raise HTTPException(404, "stream_checkpoint 服务未注册")
-    r4 = svc_ckpt.domain_save_checkpoint(checkpoint_id)
+    r4 = svc_ckpt.domain_save_checkpoint(
+        checkpoint_id,
+        merge_result=r3,
+    )
     steps.append({"step": "save_checkpoint", "ok": r4["ok"], "details": r4})
 
     return {"chain": "schema-evolve", "ok": True, "steps": steps, "summary": {
         "schema_version": r1.get("evolved_version"),
         "backfill_rows": r2.get("completed_rows"),
         "reconciled_total": r3.get("reconciled_total"),
+        "write_set": r3.get("write_set") or r3.get("rows"),
+        "rows": r3.get("rows") or r3.get("write_set"),
+        "unique_business_keys": r3.get("unique_keys"),
         "checkpoint": r4.get("checkpoint_id"),
+        "delivery_range": r4.get("delivery_range"),
+        "version": r4.get("version"),
     }}
 
 
